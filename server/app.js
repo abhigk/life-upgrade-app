@@ -19,6 +19,11 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 
+// add sample test on / to show that the server is up
+app.get("/", (req, res) => {
+  res.send("Habits API is running");
+});
+
 // Use habit routes
 app.use("/api/habits", habitRoutes);
 
