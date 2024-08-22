@@ -1,4 +1,5 @@
 const { pool } = require("../db");
+const dayjs = require("dayjs");
 
 const createHabit = async (req, res) => {
   const {
@@ -132,6 +133,13 @@ const logHabit = async (req, res) => {
     return res.status(400).json({ error: "Missing required parameters" });
   }
 
+  const parsedDate = new Date(log_date);
+  if (isNaN(parsedDate.getTime())) {
+    return res.status(400).json({ error: "Invalid date format" });
+  }
+
+  const formattedDate = parsedDate.toISOString();
+
   try {
     // Check if a log already exists for the same habit ID and user ID on the same date
     const existingLogQuery = `
@@ -156,9 +164,9 @@ const logHabit = async (req, res) => {
     // If no existing log is found, create a new log
     const query = `INSERT INTO habitLogs (habit_id, user_id, log_date, is_completed)
     VALUES ($1, $2, $3, $4)
-    RETURNING habit_id, user_id, log_date::date AS log_date, is_completed
+    RETURNING habit_id, user_id, to_char(log_date,'YYYY-MM-DD') As log_date, is_completed
     `;
-    const values = [habit_id, user_id, log_date, is_completed];
+    const values = [habit_id, user_id, formattedDate, is_completed];
     const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -397,8 +405,8 @@ const getAllHabitsWithLogs = async (req, res) => {
         h.frequency,
         h.habit_description,
         h.custom_parameters,
-        h.created_at,
-        h.end_date,
+        to_char(h.created_at, 'YYYY-MM-DD HH24:MI') As created_at,
+        to_char(h.end_date, 'YYYY-MM-DD HH24:MI') As end_date,
         h.selected_days,
         h.icon,
         h.color,
