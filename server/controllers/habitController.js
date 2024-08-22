@@ -15,8 +15,6 @@ const createHabit = async (req, res) => {
     frequency,
   } = req.body;
 
-  console.log("req.body", req.body);
-
   if (!user_id || !habit_name || !time_range || !frequency || !selected_days) {
     return res.status(400).json({
       error: "Missing required parameters. Please check your request body.",
@@ -59,67 +57,140 @@ const createHabit = async (req, res) => {
   }
 };
 
-const getTodaysHabits = async (req, res) => {
-  const { user_id } = req.params;
-  const today = new Date(); // get current date
-  const query = `
-    SELECT * FROM habits
-    WHERE user_id = $1
-    AND (
-      (frequency = 'daily' AND end_date >= $2)
-      OR (frequency = 'weekly' AND EXTRACT(dow FROM $2) = EXTRACT(dow FROM start_date))
-      OR (frequency = 'monthly' AND EXTRACT(day FROM $2) = EXTRACT(day FROM start_date))
-    )
-  `;
+//NOT REQUIRED
+// const getTodaysHabits = async (req, res) => {
+//   const { user_id } = req.params;
+//   const today = new Date(); // get current date
+//   const query = `
+//     SELECT * FROM habits
+//     WHERE user_id = $1
+//     AND (
+//       (frequency = 'daily' AND end_date >= $2)
+//       OR (frequency = 'weekly' AND EXTRACT(dow FROM $2) = EXTRACT(dow FROM start_date))
+//       OR (frequency = 'monthly' AND EXTRACT(day FROM $2) = EXTRACT(day FROM start_date))
+//     )
+//   `;
 
-  try {
-    const result = await pool.query(query, [user_id, today]);
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching today's habits:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while fetching today's habits" });
-  }
-};
+//   try {
+//     const result = await pool.query(query, [user_id, today]);
+//     res.json(result.rows);
+//   } catch (error) {
+//     console.error("Error fetching today's habits:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while fetching today's habits" });
+//   }
+// };
 
-const getHabitsByDate = async (req, res) => {
-  const { user_id, date } = req.params; // Expect date in 'YYYY-MM-DD' format
-  console.log("user_id, date", user_id, date);
+// const getHabitsByDate = async (req, res) => {
+//   const { user_id, date } = req.params; // Expect date in 'YYYY-MM-DD' format
+//   // console.log("user_id, date", user_id, date);
 
-  if (!date) {
-    return res.status(400).json({ error: "Date parameter is required" });
-  }
+//   if (!date) {
+//     return res.status(400).json({ error: "Date parameter is required" });
+//   }
 
-  const queryDate = new Date(date);
-  const dayOfWeek = queryDate.getDay(); // 0-6, where 0 is Sunday
+//   const queryDate = new Date(date);
+//   const dayOfWeek = queryDate.getDay(); // 0-6, where 0 is Sunday
 
-  const query = `
-    SELECT DISTINCT
-      h.habit_id, h.user_id, h.habit_name, h.frequency, h.habit_description, 
-      h.custom_parameters, h.created_at, h.end_date, h.selected_days, h.icon, h.color,
-      COALESCE(hl.is_completed, false) as is_completed
-    FROM habits h
-    LEFT JOIN habitLogs hl ON h.habit_id = hl.habit_id AND hl.log_date = $2
-    WHERE h.user_id = $1
-    AND (
-      (frequency = 'daily' AND (h.end_date IS NULL OR h.end_date >= $2))
-      OR (h.frequency = 'weekly' AND EXTRACT(dow FROM $2) = EXTRACT(dow FROM h.created_at))
-      OR (h.frequency = 'monthly' AND EXTRACT(day FROM $2) = EXTRACT(day FROM h.created_at))
-    )
-    ORDER BY h.created_at ASC
-  `;
+//   const query = `
+//     SELECT DISTINCT
+//       h.habit_id, h.user_id, h.habit_name, h.frequency, h.habit_description,
+//       h.custom_parameters, h.created_at, h.end_date, h.selected_days, h.icon, h.color,
+//       COALESCE(hl.is_completed, false) as is_completed
+//     FROM habits h
+//     LEFT JOIN habitLogs hl ON h.habit_id = hl.habit_id AND hl.log_date = $2
+//     WHERE h.user_id = $1
+//     AND (
+//       (frequency = 'daily' AND (h.end_date IS NULL OR h.end_date >= $2))
+//       OR (h.frequency = 'weekly' AND EXTRACT(dow FROM $2) = EXTRACT(dow FROM h.created_at))
+//       OR (h.frequency = 'monthly' AND EXTRACT(day FROM $2) = EXTRACT(day FROM h.created_at))
+//     )
+//     ORDER BY h.created_at ASC
+//   `;
 
-  try {
-    const result = await pool.query(query, [user_id, queryDate]);
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching habits by date:", error);
-    res.status(500).json({
-      error: "An error occurred while fetching habits for the specified date",
-    });
-  }
-};
+//   try {
+//     const result = await pool.query(query, [user_id, queryDate]);
+//     res.json(result.rows);
+//   } catch (error) {
+//     console.error("Error fetching habits by date:", error);
+//     res.status(500).json({
+//       error: "An error occurred while fetching habits for the specified date",
+//     });
+//   }
+// };
+
+// const getHabitsByWeek = async (req, res) => {
+//   const { user_id, date } = req.params;
+
+//   if (!date) {
+//     return res.status(400).json({ error: "Date parameter is required" });
+//   }
+
+//   const queryDate = new Date(date);
+//   if (isNaN(queryDate.getTime())) {
+//     return res
+//       .status(400)
+//       .json({ error: "Invalid date format. Please use YYYY-MM-DD" });
+//   }
+
+//   const startOfWeek = new Date(queryDate);
+//   startOfWeek.setDate(queryDate.getDate() - queryDate.getDay());
+//   startOfWeek.setHours(0, 0, 0, 0);
+
+//   const endOfWeek = new Date(startOfWeek);
+//   endOfWeek.setDate(startOfWeek.getDate() + 6);
+//   endOfWeek.setHours(23, 59, 59, 999);
+
+//   const query = `
+//     SELECT
+//       h.habit_id, h.user_id, h.habit_name, h.frequency, h.habit_description,
+//       h.custom_parameters, h.created_at, h.end_date, h.selected_days, h.icon, h.color,
+//       ARRAY_AGG(DISTINCT hl.log_date ORDER BY hl.log_date) AS completed_dates
+//     FROM habits h
+//     LEFT JOIN habitLogs hl ON h.habit_id = hl.habit_id
+//       AND hl.log_date BETWEEN $2 AND $3
+//       AND hl.is_completed = true
+//     WHERE h.user_id = $1
+//     AND (
+//       (h.frequency = 'daily' AND h.end_date >= $2)
+//       OR (h.frequency = 'weekly')
+//       OR (h.frequency = 'monthly' AND
+//           (EXTRACT(DAY FROM h.created_at) BETWEEN EXTRACT(DAY FROM $2) AND EXTRACT(DAY FROM $3)
+//            OR EXTRACT(DAY FROM h.created_at) = EXTRACT(DAY FROM $2)))
+//     )
+//     GROUP BY h.habit_id
+//     ORDER BY h.created_at ASC
+//   `;
+
+//   try {
+//     const result = await pool.query(query, [user_id, startOfWeek, endOfWeek]);
+
+//     const processedResults = result.rows.map((habit) => {
+//       if (!habit || !habit.completed_dates) {
+//         throw new Error("Missing data for habit");
+//       }
+//       const weekDays = [];
+//       for (let i = 0; i < 7; i++) {
+//         const day = new Date(startOfWeek);
+//         day.setDate(startOfWeek.getDate() + i);
+//         const dayStr = day.toISOString().split("T")[0];
+//         weekDays.push({
+//           date: dayStr,
+//           completed: habit.completed_dates.includes(dayStr),
+//         });
+//       }
+//       return { ...habit, week_days: weekDays };
+//     });
+
+//     res.json(processedResults);
+//   } catch (error) {
+//     console.error("Error fetching habits by week:", error);
+//     res.status(500).json({
+//       error: "An error occurred while fetching habits for the specified week",
+//     });
+//   }
+// };
 
 const logHabit = async (req, res) => {
   const { habit_id, user_id, log_date, is_completed } = req.body;
@@ -305,155 +376,140 @@ const deleteHabit = async (req, res) => {
   }
 };
 
-const getHabitsByWeek = async (req, res) => {
-  const { user_id, date } = req.params;
+// Get all habits with logs working
+// const getAllHabitsWithLogs = async (req, res) => {
+//   const client = await pool.connect();
+//   const { user_id } = req.params;
+//   try {
+//     // Get all habits for the user
+//     const habitsQuery = `
+//       SELECT * FROM habits
+//       WHERE user_id = $1
+//     `;
+//     const habitsResult = await client.query(habitsQuery, [user_id]);
+//     const habits = habitsResult.rows;
 
-  if (!date) {
-    return res.status(400).json({ error: "Date parameter is required" });
-  }
+//     // Get all logs for the user's habits
+//     const logsQuery = `
+//       SELECT log_id, to_char(log_date,'YYYY-MM-DD') As log_date, is_completed, habit_id FROM habitlogs
+//       WHERE habit_id IN (SELECT habit_id FROM habits WHERE user_id = $1)
+//     `;
+//     const logsResult = await client.query(logsQuery, [user_id]);
+//     const logs = logsResult.rows;
 
-  const queryDate = new Date(date);
-  if (isNaN(queryDate.getTime())) {
-    return res
-      .status(400)
-      .json({ error: "Invalid date format. Please use YYYY-MM-DD" });
-  }
+//     // Format the result
+//     const formattedHabits = habits.map((habit) => {
+//       const habitLogs = {};
+//       logs
+//         .filter((log) => log.habit_id === habit.habit_id)
+//         .forEach((log) => {
+//           habitLogs[log.log_date] = {
+//             log_id: log.log_id,
+//             log_date: log.log_date,
+//             is_completed: log.is_completed,
+//           };
+//         });
 
-  const startOfWeek = new Date(queryDate);
-  startOfWeek.setDate(queryDate.getDate() - queryDate.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
+//       return {
+//         habit_id: habit.habit_id,
+//         user_id: habit.user_id,
+//         habit_name: habit.habit_name,
+//         frequency: habit.frequency,
+//         habit_description: habit.habit_description,
+//         custom_parameters: habit.custom_parameters,
+//         created_at: habit.created_at.toISOString(),
+//         end_date: habit.end_date ? habit.end_date.toISOString() : null,
+//         selected_days: habit.custom_parameters?.selected_days || [],
+//         icon: habit.custom_parameters?.icon || "default",
+//         color: habit.custom_parameters?.color || "#000000",
+//         habitLogs: habitLogs,
+//       };
+//     });
 
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
+//     res.json(formattedHabits);
+//   } catch (error) {
+//     console.error("Error fetching habits and logs:", error);
+//     res
+//       .status(500)
+//       .json({ error: "An error occurred while fetching habits and logs" });
+//   } finally {
+//     client.release();
+//   }
+// };
 
-  const query = `
-    SELECT 
-      h.habit_id, h.user_id, h.habit_name, h.frequency, h.habit_description, 
-      h.custom_parameters, h.created_at, h.end_date, h.selected_days, h.icon, h.color,
-      ARRAY_AGG(DISTINCT hl.log_date ORDER BY hl.log_date) AS completed_dates
-    FROM habits h
-    LEFT JOIN habitLogs hl ON h.habit_id = hl.habit_id 
-      AND hl.log_date BETWEEN $2 AND $3 
-      AND hl.is_completed = true
-    WHERE h.user_id = $1
-    AND (
-      (h.frequency = 'daily' AND h.end_date >= $2)
-      OR (h.frequency = 'weekly')
-      OR (h.frequency = 'monthly' AND 
-          (EXTRACT(DAY FROM h.created_at) BETWEEN EXTRACT(DAY FROM $2) AND EXTRACT(DAY FROM $3)
-           OR EXTRACT(DAY FROM h.created_at) = EXTRACT(DAY FROM $2)))
-    )
-    GROUP BY h.habit_id
-    ORDER BY h.created_at ASC
-  `;
-
-  try {
-    const result = await pool.query(query, [user_id, startOfWeek, endOfWeek]);
-
-    const processedResults = result.rows.map((habit) => {
-      if (!habit || !habit.completed_dates) {
-        throw new Error("Missing data for habit");
-      }
-      const weekDays = [];
-      for (let i = 0; i < 7; i++) {
-        const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
-        const dayStr = day.toISOString().split("T")[0];
-        weekDays.push({
-          date: dayStr,
-          completed: habit.completed_dates.includes(dayStr),
-        });
-      }
-      return { ...habit, week_days: weekDays };
-    });
-
-    res.json(processedResults);
-  } catch (error) {
-    console.error("Error fetching habits by week:", error);
-    res.status(500).json({
-      error: "An error occurred while fetching habits for the specified week",
-    });
-  }
-};
-
-const optimizeHabitLogs = (habitLogs) => {
-  console.log("habitLogs", habitLogs);
-
-  const optimizedLogs = {};
-
-  habitLogs.forEach((log) => {
-    const logDate = log.logDate;
-    if (!optimizedLogs[logDate]) {
-      optimizedLogs[logDate] = [];
-    }
-    optimizedLogs[logDate].push(log);
-  });
-
-  return optimizedLogs;
-};
-
+// Get all habits with logs in single JOIN
 const getAllHabitsWithLogs = async (req, res) => {
   const { user_id } = req.params;
-
+  const { date } = req.body;
   try {
-    const query = `
-      SELECT
-        h.habit_id,
-        h.user_id,
-        h.habit_name,
-        h.frequency,
-        h.habit_description,
-        h.custom_parameters,
-        to_char(h.created_at, 'YYYY-MM-DD HH24:MI') As created_at,
-        to_char(h.end_date, 'YYYY-MM-DD HH24:MI') As end_date,
-        h.selected_days,
-        h.icon,
-        h.color,
-        COALESCE(hl.log_id, NULL) AS log_id,
-        COALESCE(hl.log_date, NULL) AS log_date,
-        COALESCE(hl.is_completed, NULL) AS is_completed
-      FROM habits h
-      LEFT JOIN habitLogs hl ON h.habit_id = hl.habit_id
-      WHERE h.user_id = $1
-      ORDER BY h.created_at ASC, hl.log_date ASC
-    `;
-    const result = await pool.query(query, [user_id]);
+    let query;
+    let params;
 
-    const habits = result.rows.reduce((acc, row) => {
-      const { habit_id } = row;
-      if (!acc[habit_id]) {
-        acc[habit_id] = {
-          habit_id,
+    if (date) {
+      query = `
+      SELECT h.*, hl.log_id, to_char(hl.log_date, 'YYYY-MM-DD') AS log_date, hl.is_completed
+      FROM habits h
+      LEFT JOIN habitlogs hl ON h.habit_id = hl.habit_id AND hl.log_date > $2
+      WHERE h.user_id = $1
+      ORDER BY h.habit_id, hl.log_date
+    `;
+      params = [user_id, date];
+    } else {
+      query = `
+      SELECT h.*, hl.log_id, to_char(hl.log_date, 'YYYY-MM-DD') AS log_date, hl.is_completed
+      FROM habits h
+      LEFT JOIN habitlogs hl ON h.habit_id = hl.habit_id
+      WHERE h.user_id = $1
+      ORDER BY h.habit_id, hl.log_date
+    `;
+      params = [user_id];
+    }
+
+    // // Get all habits with their corresponding logs
+    // const query = `
+    //   SELECT h.*, hl.log_id, to_char(hl.log_date, 'YYYY-MM-DD') AS log_date, hl.is_completed
+    //   FROM habits h
+    //   LEFT JOIN habitlogs hl ON h.habit_id = hl.habit_id
+    //   ${date ? "AND hl.log_date > $2" : ""}
+    //   WHERE h.user_id = $1
+    //   ORDER BY h.habit_id, hl.log_date
+    // `;
+    const result = await pool.query(query, params);
+    const rows = result.rows;
+
+    // Format the result
+    const formattedHabits = rows.reduce((acc, row) => {
+      let habit = acc.find((h) => h.habit_id === row.habit_id);
+      if (!habit) {
+        habit = {
+          habit_id: row.habit_id,
           user_id: row.user_id,
           habit_name: row.habit_name,
           frequency: row.frequency,
           habit_description: row.habit_description,
           custom_parameters: row.custom_parameters,
-          created_at: row.created_at,
-          end_date: row.end_date,
-          selected_days: row.selected_days,
-          icon: row.icon,
-          color: row.color,
-          habitLogs: {
-            [row.log_date.toISOString()]: {
-              log_id: row.log_id,
-              log_date: row.log_date,
-              is_completed: row.is_completed,
-            },
-          },
+          created_at: row.created_at.toISOString(),
+          end_date: row.end_date ? row.end_date.toISOString() : null,
+          selected_days: row.custom_parameters?.selected_days || [],
+          icon: row.custom_parameters?.icon || "default",
+          color: row.custom_parameters?.color || "#000000",
+          habitLogs: {},
         };
-      } else {
-        acc[habit_id].habitLogs[row.log_date.toISOString()] = {
+        acc.push(habit);
+      }
+
+      if (row.log_id) {
+        habit.habitLogs[row.log_date] = {
           log_id: row.log_id,
           log_date: row.log_date,
           is_completed: row.is_completed,
         };
       }
-      return acc;
-    }, {});
 
-    res.json(Object.values(habits));
+      return acc;
+    }, []);
+
+    res.json(formattedHabits);
   } catch (error) {
     console.error("Error fetching habits and logs:", error);
     res
@@ -462,14 +518,26 @@ const getAllHabitsWithLogs = async (req, res) => {
   }
 };
 
+// Usage example
+// async function main() {
+//   try {
+//     const userId = 123; // Replace with the actual user ID
+//     const habits = await getHabitsWithLogs(userId);
+//     console.log("habits", JSON.stringify(habits, null, 2));
+//   } catch (error) {
+//     console.error("Error:", error);
+//   } finally {
+//     await pool.end();
+//   }
+// }
+
+// main();
+
 module.exports = {
   createHabit,
   getAllHabits,
   logHabit,
-  getTodaysHabits,
-  getHabitsByDate,
   editHabit,
   deleteHabit,
-  getHabitsByWeek,
   getAllHabitsWithLogs,
 };
