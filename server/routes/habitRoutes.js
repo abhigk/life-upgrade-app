@@ -7,6 +7,7 @@ const {
   editHabit,
   deleteHabit,
   getAllHabitsWithLogs,
+  removeHabitLog,
 } = require("../controllers/habitController");
 
 router.post("/create", createHabit);
@@ -16,6 +17,7 @@ router.get("/:user_id", getAllHabitsWithLogs);
 // router.get("/:user_id/:date", getHabitsByDate);
 router.put("/edit/:habit_id", editHabit);
 router.delete("/:habit_id", deleteHabit);
+router.delete("/:userId/log/:habitLogId", removeHabitLog);
 // router.get("/:user_id/week/:date", getHabitsByWeek);
 
 module.exports = router;

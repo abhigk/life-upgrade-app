@@ -250,10 +250,10 @@ const removeHabitLog = async (req, res) => {
   const { habitLogId, userId } = req.params;
 
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `
       DELETE FROM habitLogs
-      WHERE id = $1 AND user_id = $2
+      WHERE log_id = $1 AND user_id = $2
       RETURNING *
     `,
       [habitLogId, userId]
@@ -540,4 +540,5 @@ module.exports = {
   editHabit,
   deleteHabit,
   getAllHabitsWithLogs,
+  removeHabitLog,
 };
